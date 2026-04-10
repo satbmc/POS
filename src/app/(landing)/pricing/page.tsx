@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Simple, Transparent Pricing | RetailSmart ERP',
     description: 'All features. Unlimited users. Free forever. Only pay for storage as you grow.',
-    url: 'https://www.retailsmarterp.com/pricing',
+    url: 'https://www.localhost:3000/pricing',
     images: [{ url: '/og/pricing', width: 1200, height: 630, alt: 'RetailSmart ERP Pricing' }],
   },
   twitter: {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     images: ['/og/pricing'],
   },
   alternates: {
-    canonical: 'https://www.retailsmarterp.com/pricing',
+    canonical: 'https://www.localhost:3000/pricing',
   },
 }
 
@@ -114,16 +114,16 @@ export default function PricingPage() {
             {
               "@context": "https://schema.org",
               "@type": "Product",
-              "name": "RetailSmart ERP",
+              "name": "NextSmart ERP",
               "description": "All-in-one AI-powered cloud POS and ERP. All features on every plan. Unlimited users and transactions.",
               "brand": {
                 "@type": "Brand",
-                "name": "RetailSmart"
+                "name": "NextSmart"
               },
               "offers": {
                 "@type": "Offer",
                 "price": "0",
-                "priceCurrency": "USD",
+                "priceCurrency": "UGX",
                 "availability": "https://schema.org/InStock",
                 "description": "Free plan - All features included, unlimited users, 20 MB storage"
               }

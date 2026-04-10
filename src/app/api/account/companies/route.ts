@@ -181,12 +181,19 @@ export async function POST(request: NextRequest) {
 
     const parsed = await validateBody(request, createCompanySchema)
     if (!parsed.success) return parsed.response
-    const { name, slug, businessType, email, phone, address, country, dateFormat, timeFormat, tierId, billingCycle, aiEnabled } = parsed.data
+    const { name, slug, businessType, email, phone, address, country, dateFormat, timeFormat, tierId, billingCycle, aiEnabled, efrisTin } = parsed.data
 
     // Validate country
     const countryData = getCountryByCode(country)
     if (!countryData) {
       return NextResponse.json({ error: 'Invalid country selected' }, { status: 400 })
+    }
+
+    // Validate EFRIS TIN for Ugandan companies
+    if (country === 'UG' && efrisTin && !/^UG\d{10}$/.test(efrisTin)) {
+      return NextResponse.json({
+        error: 'Invalid TIN format for Uganda. Must be UG followed by 10 digits.',
+      }, { status: 400 })
     }
 
     // Check if slug is reserved
@@ -273,9 +280,7 @@ export async function POST(request: NextRequest) {
       }, { status: 201 })
     }
 
-    // Flow A: First company → create immediately (free forever, or apply credit)
-    // All critical checks (membership re-check, credit locking, slug uniqueness)
-    // are performed inside the transaction to prevent race conditions.
+    // Flow A: First company → create immediately with a 7-day trial
     const currency = getCurrencyByCountry(country)
     const now = new Date()
 
@@ -329,13 +334,13 @@ export async function POST(request: NextRequest) {
         .for('update')
         .limit(1)
 
-      // Determine subscription parameters based on credit or default free plan
+      // Determine subscription parameters based on credit or default 7-day trial
       let subscriptionTierId: string
       let subscriptionStatus: 'trial' | 'active'
       let subscriptionBillingCycle: string
       let periodEnd: Date
+      let trialEndsAt: Date | null = null
       let tenantPlan: 'trial' | 'basic' | 'standard' | 'premium'
-      let isFreeFirstCompany = false
 
       if (unusedCredit) {
         subscriptionTierId = unusedCredit.tierId
@@ -350,16 +355,20 @@ export async function POST(request: NextRequest) {
           subscriptionStatus = 'active'
           tenantPlan = (creditTier?.name as typeof tenantPlan) || 'standard'
         } else {
-          subscriptionStatus = 'active'
-          tenantPlan = 'trial'  // enum value; display name is "Free"
+          subscriptionStatus = 'trial'
+          tenantPlan = 'trial'
+          trialEndsAt = periodEnd
         }
       } else {
-        isFreeFirstCompany = true
-        periodEnd = new Date('2099-12-31')
-        subscriptionStatus = 'active'
-        tenantPlan = 'trial'  // enum value; display name is "Free"
+        // Default: 7-day trial for the first company
+        subscriptionStatus = 'trial'
+        tenantPlan = 'trial'
         subscriptionBillingCycle = 'monthly'
         subscriptionTierId = trialTier.id
+        
+        trialEndsAt = new Date(now)
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+        periodEnd = trialEndsAt
       }
 
       // Create tenant
@@ -376,10 +385,11 @@ export async function POST(request: NextRequest) {
         timeFormat,
         primaryOwnerId: accountId,
         plan: tenantPlan,
-        planExpiresAt: isFreeFirstCompany ? null : periodEnd,
+        planExpiresAt: periodEnd,
         status: 'active',
         aiEnabled: !!aiEnabled,
         aiConsentAcceptedAt: aiEnabled ? new Date() : null,
+        efrisTin: efrisTin || null,
       }).returning()
 
       // Set tenant context for RLS
@@ -391,7 +401,7 @@ export async function POST(request: NextRequest) {
         billingAccountId: accountId,
         tierId: subscriptionTierId,
         status: subscriptionStatus,
-        trialEndsAt: null,  // No trial concept — free-forever companies are always active
+        trialEndsAt: trialEndsAt,
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
         billingCycle: subscriptionBillingCycle,

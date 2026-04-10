@@ -7,6 +7,7 @@ import {
   Sparkles, Shield, Users, Store, BarChart3, ShoppingCart,
   Package, Calculator, Utensils, Monitor, Wrench, Car, Brain,
   ShieldCheck, Check, UserPlus, Settings, Rocket, ArrowRight, Gift,
+  FileCheck, Database,
 } from 'lucide-react'
 import {
   PageWrapper, FadeIn, BlurFadeIn, HeroBadge, TrustBar,
@@ -21,7 +22,7 @@ import AIBadge from '@/components/landing/AIBadge'
 import {
   MockPOS, MockDashboard, MockKitchenDisplay,
   MockWorkOrders, MockInventory, MockAccounting, MockTables,
-  MockBrowserFrame,
+  MockBrowserFrame, MockEFRIS, MockMigration,
 } from '@/components/landing/mockups'
 import { useCurrencyDisplay } from '@/hooks'
 
@@ -31,6 +32,8 @@ const allFeatures = [
   { category: 'Inventory', color: 'bg-amber-500', items: ['Multi-Warehouse', 'Stock Transfers', 'Reorder Alerts', 'Batch Tracking', 'Stock Movements', 'Purchase Orders', 'Suppliers'] },
   { category: 'Accounting', color: 'bg-sky-500', items: ['Chart of Accounts', 'Journal Entries', 'Bank Accounts', 'Budgets', 'Cost Centers', 'Tax Templates', 'Period Closing'] },
   { category: 'HR & Payroll', color: 'bg-violet-500', items: ['Employee Records', 'Salary Structures', 'Payroll Runs', 'Salary Slips', 'Employee Advances', 'Attendance'] },
+  { category: 'URA EFRIS', color: 'bg-emerald-600', items: ['E-Invoice Generation', 'URA Real-Time Reporting', 'Fiscal Device Integration', 'Compliance Tracking', 'Error Retry', 'Multi-Business Support'] },
+  { category: 'Data Migration', color: 'bg-sky-600', items: ['QuickBooks Import', 'Zoho Books Import', 'Xero Import', 'CSV/Excel Import', 'Field Mapping Wizard', 'Data Validation'] },
   { category: 'Restaurant', color: 'bg-orange-500', items: ['Kitchen Display', 'Table Management', 'Floor Plan', 'Reservations', 'Recipe Costing', 'Waste Tracking', 'Deliveries'] },
   { category: 'Auto Service', color: 'bg-rose-500', items: ['Work Orders', 'Vehicle Tracking', 'Inspections', 'Insurance Estimates', 'Parts Management', 'Labor Guides'] },
   { category: 'Platform', color: 'bg-stone-500', items: ['Real-time sync', 'AI Intelligence', 'Multi-Currency', 'Role-Based Access', 'Custom Reports', 'Export Excel/PDF'] },
@@ -55,9 +58,9 @@ function formatBytesShort(bytes: number | null): string {
 }
 
 const fallbackPricingTiers = [
-  { name: 'Free', price: 'Free', period: 'forever', features: ['All Features', 'Unlimited Users', '80 MB Database', '100 MB Files'] },
-  { name: 'Starter', price: 'Rs 1,990', period: 'month', features: ['All Features', 'Unlimited Users', '500 MB Database', '500 MB Files'] },
-  { name: 'Professional', price: 'Rs 4,990', period: 'month', features: ['All Features', 'Unlimited Users', '3 GB Database', '2 GB Files'], popular: true },
+  { name: 'Free Trial', price: 'Free', period: '7 days', features: ['All Features', 'Unlimited Users', '80 MB Database', '100 MB Files'] },
+  { name: 'Starter', price: 'Ush 1,990', period: 'month', features: ['All Features', 'Unlimited Users', '500 MB Database', '500 MB Files'] },
+  { name: 'Professional', price: 'Ush 4,990', period: 'month', features: ['All Features', 'Unlimited Users', '3 GB Database', '2 GB Files'], popular: true },
 ]
 
 export default function HomeClient() {
@@ -109,7 +112,7 @@ export default function HomeClient() {
           return {
             name: tier.displayName,
             price: priceDisplay,
-            period: isFree ? 'forever' : 'month',
+            period: isFree ? '7 days' : 'month',
             features,
             popular: tier.name === 'professional',
             isCustom: false,
@@ -133,6 +136,8 @@ export default function HomeClient() {
     { key: 'kitchen', label: 'Restaurant Kitchen', icon: Utensils, gradient: 'from-orange-500 to-red-500', mockup: <MockKitchenDisplay />, description: 'Real-time kitchen display system with order queues, status tracking, and automatic notifications.', features: ['Order queue management', 'Status tracking', 'Priority ordering', 'Cook time tracking', 'Auto-notifications', 'Multi-station support'] },
     { key: 'tables', label: 'Tables', icon: Monitor, gradient: 'from-rose-500 to-pink-500', mockup: <MockTables />, description: 'Visual table management with floor plan designer, real-time status updates, and reservation integration.', features: ['Floor plan designer', 'Real-time table status', 'Table merging & splitting', 'Reservation linking', 'Capacity management', 'Waiter assignment'] },
     { key: 'workorders', label: 'Auto Service', icon: Wrench, gradient: 'from-indigo-500 to-violet-500', mockup: <MockWorkOrders />, description: 'Complete work order management with vehicle tracking, inspections, and insurance estimate integration.', features: ['Work order management', 'Vehicle tracking', 'Multi-point inspections', 'Insurance estimates', 'Parts management', 'Labor guides'] },
+    { key: 'efris', label: 'URA EFRIS', icon: FileCheck, gradient: 'from-emerald-600 to-green-600', mockup: <MockEFRIS />, description: 'Fully certified integration with Uganda Revenue Authority\'s Electronic Fiscal Receipting and Invoicing System. Automatic e-invoicing, real-time sales reporting, and fiscal device integration.', features: ['Automatic e-invoice generation & submission', 'Real-time sales data reporting to URA', 'Fiscal device integration support', 'Compliance tracking & alerts', 'Works for retail, restaurant, and wholesale', 'Error handling & retry mechanisms'] },
+    { key: 'migration', label: 'Data Migration', icon: Database, gradient: 'from-sky-600 to-blue-600', mockup: <MockMigration />, description: 'Seamlessly migrate your data from QuickBooks Online, Zoho Books, Xero, FreshBooks, or CSV/Excel files with our guided migration wizard.', features: ['QuickBooks Online, Zoho, Xero, FreshBooks support', 'Import customers, products, invoices & more', 'Guided wizard with step-by-step help', 'Data validation & error reporting', 'CSV/Excel import fallback option', 'Secure, encrypted data transfer'] },
     { key: 'dashboard', label: 'AI Dashboard', icon: Brain, gradient: 'from-emerald-600 to-amber-500', mockup: <MockDashboard />, description: 'Real-time dashboards with AI chat assistant, sales analytics, and business intelligence.', features: ['Real-time metrics', 'AI chat assistant', 'Sales trend analysis', 'Smart warnings', 'Custom reports', 'Export to Excel/PDF'] },
   ]
 
@@ -169,7 +174,7 @@ export default function HomeClient() {
                   />
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 backdrop-blur-sm">
                     <Check className="w-3.5 h-3.5" />
-                    Free Forever
+                    7-Day Trial
                   </span>
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-white tracking-tight">
@@ -179,14 +184,14 @@ export default function HomeClient() {
                 <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-xl">
                   POS, inventory, accounting, HR, and AI analytics — all in one platform.
                   Built for retail, restaurants, supermarkets, and auto service.{' '}
-                  <strong className="text-white">Free Forever. Unlimited Users. No Credit Card.</strong>
+                  <strong className="text-white">Start with a 7-day Free Trial. Unlimited Users. No Credit Card.</strong>
                 </p>
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
                     href="/register"
                     className="inline-flex items-center gap-2 px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 rounded-md transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5"
                   >
-                    Get Started Free
+                    Start Free Trial
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                   <Link
@@ -199,7 +204,7 @@ export default function HomeClient() {
                 <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-white/60">
                   <div className="flex items-center gap-1.5">
                     <Gift className="w-4 h-4 text-emerald-400" />
-                    Free Forever
+                    7-Day Free Trial
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-emerald-400" />
@@ -220,7 +225,7 @@ export default function HomeClient() {
             {/* Right column — Dashboard mockup */}
             <FadeIn className="hidden lg:block" delay={0.3}>
               <FloatingMockup>
-                <MockBrowserFrame url="app.retailsmarterp.com/dashboard">
+                <MockBrowserFrame url="app.localhost:3000/dashboard">
                   <MockDashboard />
                 </MockBrowserFrame>
               </FloatingMockup>
@@ -581,7 +586,7 @@ export default function HomeClient() {
                     number: 1,
                     icon: UserPlus,
                     title: 'Create Account',
-                    description: 'Sign up in seconds. Your first company is free forever. Choose your country and verify your email.',
+                    description: 'Sign up in seconds. Your first company starts with a 7-day trial. Choose your country and verify your email.',
                   },
                   {
                     number: 2,
@@ -640,7 +645,7 @@ export default function HomeClient() {
             badge="Pricing"
             title="Simple, transparent pricing"
             highlight="transparent pricing"
-            subtitle="All features on every plan. No per-user fees. Your first company is free forever."
+            subtitle="All features on every plan. No per-user fees. Start with a 7-day trial for your first company."
           />
 
           {/* All features badge */}
@@ -681,7 +686,7 @@ export default function HomeClient() {
          ══════════════════════════════════════════════ */}
       <CTASection
         title="Ready to transform your business?"
-        subtitle="Start managing your business with RetailSmart ERP. All features included, unlimited users, free forever."
+        subtitle="Start managing your business with RetailSmart ERP. All features included, unlimited users, 7-day free trial."
       />
     </PageWrapper>
   )

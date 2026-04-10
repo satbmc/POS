@@ -304,6 +304,10 @@ export const tenants = pgTable('tenants', {
   lockedReason: varchar('locked_reason', { length: 50 }), // 'trial_expired', 'storage_full', 'subscription_expired'
   deletionScheduledAt: timestamp('deletion_scheduled_at'),
   lastWarningSentAt: timestamp('last_warning_sent_at'),
+  // EFRIS Configuration
+  efrisEnabled: boolean('efris_enabled').notNull().default(false),
+  efrisTin: varchar('efris_tin', { length: 20 }),
+  efrisToken: text('efris_token'), // Per-tenant token (optional if global token is used)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -1624,10 +1628,13 @@ export const items = pgTable('items', {
   // Tax
   taxInclusive: boolean('tax_inclusive').notNull().default(false), // DEPRECATED: use taxTemplateId instead
   taxTemplateId: uuid('tax_template_id').references(() => taxTemplates.id, { onDelete: 'set null' }),
+  // EFRIS Mapping
+  efrisItemCode: varchar('efris_item_code', { length: 100 }),
+  efrisTaxForm: varchar('efris_tax_form', { length: 20 }), // e.g. '101'
+  efrisTaxRule: varchar('efris_tax_rule', { length: 50 }), // e.g. 'STANDARD'
   // Flags
   isGiftCard: boolean('is_gift_card').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
-
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -2073,6 +2080,82 @@ export const insuranceEstimateAttachments = pgTable('insurance_estimate_attachme
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// ==================== MIGRATION & INTEGRATIONS ====================
+
+export const platform_connections = pgTable('platform_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
+  platform: varchar('platform', { length: 50 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('disconnected'),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  tokenExpiresAt: timestamp('token_expires_at'),
+  realmId: varchar('realm_id', { length: 100 }),
+  accountId: varchar('account_id', { length: 100 }),
+  organizationId: varchar('organization_id', { length: 100 }),
+  tenantXeroId: varchar('tenant_xero_id', { length: 100 }),
+  companyName: varchar('company_name', { length: 255 }),
+  connectedAt: timestamp('connected_at'),
+  lastSyncedAt: timestamp('last_synced_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+export const migrations = pgTable('migrations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
+  connectionId: uuid('connection_id').references(() => platform_connections.id),
+  sourcePlatform: varchar('source_platform', { length: 50 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  entities: jsonb('entities').notNull().default([]),
+  stats: jsonb('stats').default({}),
+  currentEntity: varchar('current_entity', { length: 50 }),
+  currentProgress: integer('current_progress').default(0),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+export const migration_entity_progress = pgTable('migration_entity_progress', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  migrationId: uuid('migration_id').references(() => migrations.id, { onDelete: 'cascade' }),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  totalCount: integer('total_count').default(0),
+  importedCount: integer('imported_count').default(0),
+  failedCount: integer('failed_count').default(0),
+  skippedCount: integer('skipped_count').default(0),
+  errorLog: jsonb('error_log'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+})
+
+export const migration_errors = pgTable('migration_errors', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  migrationId: uuid('migration_id').references(() => migrations.id, { onDelete: 'cascade' }),
+  entityType: varchar('entity_type', { length: 50 }),
+  sourceRow: integer('source_row'),
+  sourceId: varchar('source_id', { length: 100 }),
+  fieldName: varchar('field_name', { length: 100 }),
+  sourceValue: text('source_value'),
+  errorMessage: text('error_message'),
+  errorCode: varchar('error_code', { length: 50 }),
+  canRetry: boolean('can_retry').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+export const migration_field_mappings = pgTable('migration_field_mappings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sourcePlatform: varchar('source_platform', { length: 50 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  fieldMap: jsonb('field_map').notNull(),
+  isDefault: boolean('is_default').default(false),
+  createdBy: uuid('created_by').references(() => accounts.id),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
 // ==================== SALES ====================
 
 export const sales = pgTable('sales', {
@@ -2109,6 +2192,12 @@ export const sales = pgTable('sales', {
   salesOrderId: uuid('sales_order_id'), // References sales_orders.id (no FK to avoid circular dep, added after table defined)
   createdBy: uuid('created_by').references(() => users.id),
   costCenterId: uuid('cost_center_id').references(() => costCenters.id),
+  // EFRIS Data
+  efrisInvoiceNo: varchar('efris_invoice_no', { length: 50 }),
+  efrisAntifakeCode: varchar('efris_antifake_code', { length: 100 }),
+  efrisQrCode: text('efris_qr_code'),
+  efrisStatus: varchar('efris_status', { length: 20 }), // 'pending', 'success', 'failed'
+  efrisError: text('efris_error'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -5747,6 +5836,31 @@ export const vehicleDocumentsRelations = relations(vehicleDocuments, ({ one }) =
   vehicleImport: one(vehicleImports, { fields: [vehicleDocuments.vehicleImportId], references: [vehicleImports.id] }),
   dealer: one(dealers, { fields: [vehicleDocuments.dealerId], references: [dealers.id] }),
   uploadedByUser: one(users, { fields: [vehicleDocuments.uploadedBy], references: [users.id] }),
+}))
+
+// ==================== MIGRATION RELATIONS ====================
+
+export const platformConnectionsRelations = relations(platform_connections, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [platform_connections.tenantId], references: [tenants.id] }),
+  migrations: many(migrations),
+}))
+
+export const migrationsRelations = relations(migrations, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [migrations.tenantId], references: [tenants.id] }),
+  connection: one(platform_connections, { fields: [migrations.connectionId], references: [platform_connections.id] }),
+  entityProgress: many(migration_entity_progress),
+}))
+
+export const migrationEntityProgressRelations = relations(migration_entity_progress, ({ one }) => ({
+  migration: one(migrations, { fields: [migration_entity_progress.migrationId], references: [migrations.id] }),
+}))
+
+export const migrationErrorsRelations = relations(migration_errors, ({ one }) => ({
+  migration: one(migrations, { fields: [migration_errors.migrationId], references: [migrations.id] }),
+}))
+
+export const migrationFieldMappingsRelations = relations(migration_field_mappings, ({ one }) => ({
+  creator: one(accounts, { fields: [migration_field_mappings.createdBy], references: [accounts.id] }),
 }))
 
 // ==================== CUSTOM ROLES & PERMISSION OVERRIDES RELATIONS ====================
